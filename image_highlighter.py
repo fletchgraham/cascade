@@ -7,24 +7,51 @@ def hide_non_base_layers(doc):
             layer.Visible = False
 
 
-def export_layers_as_images(doc, options):
+def export_layers_as_images(doc, options, folder):
     for layer in doc.ArtLayers:
+
+        if 'base' in layer.name.lower():
+            continue
+
         hide_non_base_layers(doc)
         layer.Visible = True
-        outpath = os.path.join(os.getcwd(), f"{layer.name}.jpg")
+
+        outpath = os.path.join(folder, f"{layer.name}.jpg")
         doc.Export(ExportIn=outpath, ExportAs=2, Options=options)
 
-psApp = win32com.client.Dispatch("Photoshop.Application")
+        print(f'saved {layer.name}')
 
-filepath = os.path.join(os.getcwd(), 'test.psd')
+def main():
 
-psApp.Open(filepath)
+    print('This script exports an image for each layer of a PSD.')
 
-doc = psApp.Application.ActiveDocument
+    filepath = 'unset'
+    
+    while filepath and not os.path.exists(filepath):
+        print(filepath)
+        filepath = input("Press enter to use active doc, or paste a path:\n>>>")
+    
+    psApp = win32com.client.Dispatch("Photoshop.Application")
 
-options = win32com.client.Dispatch('Photoshop.ExportOptionsSaveForWeb')
-options.Format = 6 #JPEG
-options.Quality = 80
+    if filepath:
+        psApp.Open(filepath)
 
-hide_non_base_layers(doc)
-export_layers_as_images(doc, options)
+    doc = psApp.Application.ActiveDocument
+
+    options = win32com.client.Dispatch('Photoshop.ExportOptionsSaveForWeb')
+    options.Format = 6 #JPEG
+    options.Quality = 80
+
+    if not filepath:
+        folder = os.path.dirname(doc.path)
+    else:
+        folder = os.path.dirname(filepath)
+    folder = os.path.join(folder, 'export')
+
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+    export_layers_as_images(doc, options, folder)
+
+if __name__ == "__main__":
+    main()
